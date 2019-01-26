@@ -15,7 +15,7 @@ class App extends Component {
   constructor(props) {
     super(props)
     
-    const json = this.load('json')
+    let json = this.load('json')
     if (!json) {
       json = JSON.parse('{"projects":{"project 1":[{"name":"task 1"},{"name":"task 2","subtasks":[{"name":"subtask 1"},{"name":"tsubtask 2"}]}],"project 2":[{"name":"task 1","priority":3},{"name":"task 2","priority":3,"subtasks":[{"name":"subtask 1","priority":5,"effort":5},{"name":"tsubtask 2","priority":1,"effort":1,"complete":true}]}]}}')
     }
