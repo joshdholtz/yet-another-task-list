@@ -17,7 +17,7 @@ class App extends Component {
     
     let json = this.load('json')
     if (!json) {
-      json = JSON.parse('{"projects":{"project 1":[{"name":"task 1"},{"name":"task 2","subtasks":[{"name":"subtask 1"},{"name":"tsubtask 2"}]}],"project 2":[{"name":"task 1","priority":3},{"name":"task 2","priority":3,"subtasks":[{"name":"subtask 1","priority":5,"effort":5},{"name":"tsubtask 2","priority":1,"effort":1,"complete":true}]}]}}')
+      json = JSON.parse('{"projects":{"project 1":[{"task":"task 1"},{"name":"task 2","subtasks":[{"name":"subtask 1"},{"name":"tsubtask 2"}]}],"project 2":[{"name":"task 1","priority":3},{"name":"task 2","priority":3,"subtasks":[{"name":"subtask 1","priority":5,"effort":5},{"name":"tsubtask 2","priority":1,"effort":1,"complete":true}]}]}}')
     }
 
     const value = yaml.safeDump (json)
@@ -43,17 +43,45 @@ class App extends Component {
     return this.state.visual_state === "editor"
   }
 
-  render() {
+  jsonTheYaml() {
+    let json = null;
+    try {
+      json = yaml.safeLoad(this.state.value)
+      this.setState({error: null, errorHide: false, json: json})
+    } catch (error) {
+      this.setState({error: error.toString(), errorHide: false})
+      return null
+    }
+  }
 
+  render() {
     return (
       <div className="App">
         { this.renderToolbar() }
         <div id="workarea">
+          { this.renderError() }
           { this.renderEditor() }
           { this.renderVisual() }
         </div>
       </div>
     );
+  }
+
+  renderError() {
+    if (!this.state.error || this.state.errorHide) {
+      return null
+    }
+
+    return (
+      <div className="error">
+        <div className="error-message">
+          { this.state.error }
+        </div>
+        <button onClick={() => {
+          this.setState({errorHide: true}) 
+          }}>X</button>
+      </div>
+    )
   }
 
   renderToolbar() {
@@ -72,6 +100,7 @@ class App extends Component {
           <button
             disabled={!this.isEditor()}
             onClick={() => {
+              this.jsonTheYaml()
               this.setState({"visual_state": "graph"})
             }}>
             Visual
@@ -81,9 +110,12 @@ class App extends Component {
           <button
             disabled={!hasChange}
             onClick={() => {
-              this.setState({"last_loaded_value": this.state.value});
-              const json = yaml.safeLoad(this.state.value)
-              const savedValue = this.store('json', json)
+              this.jsonTheYaml()
+
+              if (this.state.json) {
+                this.setState({"last_loaded_value": this.state.value});
+                const savedValue = this.store('json', this.state.json)
+              }
             }}>
             Save
           </button>
@@ -120,7 +152,7 @@ class App extends Component {
 
   renderVisualRows(rows) {
     return _.map(rows, (row) => {
-      const label = row['name'];
+      const label = row['task'];
       const subtasks = row['subtasks'] || [];
       const effort = row['effort'] || 1;
       const priority = row['priority'] || 1;
@@ -223,12 +255,13 @@ class App extends Component {
     if (this.isEditor()) {
       return null;
     }
+    if (this.state.error) {
+      return null
+    }
 
-    const json = yaml.safeLoad(this.state.value)
+    const json = this.state.json
     const projects = json["projects"]
     const rows = this.renderVisualProjects(projects)
-
-    console.log("projects", projects);
 
     return (
       <div className="visual">
